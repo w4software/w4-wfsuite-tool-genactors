@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="genactors" default="jar" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+
+  <!-- Directories properties -->
+  <property name="bin.dir" value="${basedir}/bin" />
+  <property name="javasrc.dir" value="${basedir}/src/main/java" />
+  <property name="shellsrc.dir" value="${basedir}/src/main/shell" />
+  <property name="lib.dir" value="${basedir}/lib" />
+  <property name="dist.dir" value="${basedir}/dist" />
+
+  <!-- IVY properties -->
+  <property name="ivy.install.version" value="2.4.0"/>
+  <property name="ivy.jar.dir" value="${lib.dir}/ivy"/>
+  <property name="ivy.jar.file" value="ivy.jar"/>
+
+  <!-- W4 API properties -->
+  <property name="wfjlib.jar.dir" value="${lib.dir}/w4"/>
+  <property name="wfjlib.jar.file" value="wfjlib.jar"/>
+
+  <path id="project.class.path">
+    <pathelement location="${bin.dir}" />
+    <fileset dir="${lib.dir}">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+
+  <target name="ivy" description="--> retrieve public dependencies">
+    <mkdir dir="${ivy.jar.dir}"/>
+    <get src="https://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.dir}/${ivy.jar.file}" usetimestamp="true"/>
+    <path id="ivy.lib.path">
+      <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+    </path>
+    <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+    <ivy:retrieve pattern="${lib.dir}/[conf]/[artifact].[ext]" />
+  </target>
+
+  <target name="wfjlib" description="--> retrieve W4 APIs from W4 Engine installation">
+    <copy file="${W4_HOME}/lib/java/${wfjlib.jar.file}" todir="${wfjlib.jar.dir}"/>
+  </target>
+
+  <target name="init">
+    <mkdir dir="${bin.dir}" />
+    <mkdir dir="${dist.dir}" />
+  </target>
+  
+  <target name="compile" depends="init" description="--> compile source files">
+    <javac source="1.5" destdir="${bin.dir}">
+      <src location="${javasrc.dir}" />
+      <classpath refid="project.class.path" />
+    </javac>
+  </target>
+
+  <target name="jar" depends="compile" description="--> generate module">
+    <jar destfile="${dist.dir}/${ant.project.name}.jar">
+      <fileset dir="${bin.dir}">
+        <include name="**/*" />
+      </fileset>
+    </jar>
+  </target>
+
+  <target name="zip" depends="jar" description="--> generate zip file">
+    <zip destfile="${dist.dir}/${ant.project.name}.zip">
+      <zipfileset dir="lib/default" prefix="lib">
+        <include name="**" />
+      </zipfileset>
+      <zipfileset dir="lib/w4" prefix="lib">
+        <include name="**" />
+      </zipfileset>
+      <fileset dir="${dist.dir}">
+        <include name="*.jar"/>
+      </fileset>
+      <fileset dir="${shellsrc.dir}">
+        <include name="*.cmd"/>
+      </fileset>
+      <fileset dir="${basedir}">
+        <include name="LICENSE*"/>
+        <include name="NOTICE*"/>
+        <include name="README*"/>
+      </fileset>
+    </zip>
+  </target>
+
+  <target name="tar" depends="jar" description="--> generate tar file">
+    <tar destfile="${dist.dir}/${ant.project.name}.tar.gz" compression="gzip">
+      <tarfileset dir="lib/default" mode="644" prefix="lib">
+        <include name="**" />
+      </tarfileset>
+      <tarfileset dir="lib/w4" mode="644" prefix="lib">
+        <include name="**" />
+      </tarfileset>
+      <tarfileset dir="${dist.dir}" mode="644">
+        <include name="*.jar"/>
+      </tarfileset>
+      <tarfileset dir="${shellsrc.dir}" mode="755">
+        <include name="*.sh"/>
+      </tarfileset>
+      <fileset dir="${basedir}">
+        <include name="LICENSE*"/>
+        <include name="NOTICE*"/>
+        <include name="README*"/>
+      </fileset>
+    </tar>
+  </target>
+
+  <target name="delivery" depends="zip, tar" description="--> generate delivery">
+  </target>
+  
+  <target name="clean" description="--> erase generated files">
+    <delete dir="${bin.dir}" />
+    <delete dir="${dist.dir}" />
+    <delete dir="${lib.dir}/ivy" />
+    <delete dir="${lib.dir}/default" />
+  </target>
+
+</project>
+
